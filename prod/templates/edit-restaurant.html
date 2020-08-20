@@ -1,0 +1,19 @@
+{% extends 'layout.html' %}
+{% block body %}
+<form action="/update_restaurant/ {{restaurant.0}} " method='POST'>
+  
+
+    <input type="text" name="rating" id="" placeholder="Rating"value="{{restaurant.1}}">
+    <input type="text" name="name" id="" placeholder="Name"value="{{restaurant.2}}">
+    <input type="text" name="site" id="" placeholder="Site"value="{{restaurant.3}}">
+    <input type="text" name="email" id="" placeholder="Email"value="{{restaurant.4}}">
+    <input type="number" name="phone" id="" placeholder="Phone"value="{{restaurant.5}}">
+    <input type="text" name="street" id="" placeholder="Street"value="{{restaurant.6}}">
+    <input type="text" name="city" id="" placeholder="City"value="{{restaurant.7}}">
+    <input type="text" name="state" id="" placeholder="State"value="{{restaurant.8}}">
+    <input type="number" name="lat" id="" placeholder="Lat" step="any"value="{{restaurant.9}}">
+    <input type="number" name="lng" id="" placeholder="Lng" step="any"value="{{restaurant.10}}">
+  <button type="Submit">Save 
+  </button>
+</form>
+{% endblock %}
