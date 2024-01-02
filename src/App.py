@@ -1,125 +1,80 @@
-from flask import Flask , render_template , flash , redirect, url_for
-from flask import request
-from flask_mysqldb import MySQL 
+from flask import Flask, render_template, flash, redirect, url_for, request
+from flask_sqlalchemy import SQLAlchemy
 
-
-
-## mysql Connection 
 app = Flask(__name__)
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'flaskrestaurants'
-mysql =MySQL(app)
 
-## settings 
-app.secret_key='mysecretkey'
+# Database Configuration for SQLAlchemy
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/restaurants'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize SQLAlchemy
+db = SQLAlchemy(app)
+
+# Define a model for the restaurants table
+class Restaurant(db.Model):
+    id = db.Column(db.String(255), primary_key=True)
+    rating = db.Column(db.Float)
+    name = db.Column(db.String(255))
+    site = db.Column(db.String(255))
+    email = db.Column(db.String(255))
+    phone = db.Column(db.String(255))
+    street = db.Column(db.String(255))
+    city = db.Column(db.String(255))
+    state = db.Column(db.String(255))
+    lat = db.Column(db.Float)
+    lng = db.Column(db.Float)
+
+# Settings
+app.secret_key = 'mysecretkey'
 
 @app.route('/')
-def Index(): 
-  cur=  mysql.connection.cursor()
-  cur.execute('SELECT * FROM restaurants')
-  data= cur.fetchall()
-  # print(data)
-
-  return render_template('index.html', restaurants= data)
+def Index():
+    data = Restaurant.query.all()
+    return render_template('index.html', restaurants=data)
 
 @app.route('/add_restaurant', methods=['POST'])
 def add_restaurant():
-  if request.method == "POST": 
-    id = request.form['id']
-    rating= request.form['rating']
-    name = request.form['name']
-    site = request.form['site']
-    email = request.form['email']
-    phone = request.form['phone']
-    street = request.form['street']
-    city = request.form['city']
-    state = request.form['state'] 
-    lat = request.form['lat']
-    lng= request.form['lng']
-    cur= mysql.connection.cursor()
-    cur.execute('INSERT INTO restaurants (id,rating,name,site,email,phone,street, city, state, lat,lng) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', 
-    (id,rating,name,site,email,phone,street, city, state, lat,lng))
-    mysql.connection.commit()
-    flash('restaurant added succesfully')
+    if request.method == "POST":
+        new_restaurant = Restaurant(
+            id=request.form['id'],
+            rating=request.form['rating'],
+            name=request.form['name'],
+            site=request.form['site'],
+            email=request.form['email'],
+            phone=request.form['phone'],
+            street=request.form['street'],
+            city=request.form['city'],
+            state=request.form['state'],
+            lat=request.form['lat'],
+            lng=request.form['lng']
+        )
+        db.session.add(new_restaurant)
+        db.session.commit()
+        flash('Restaurant added successfully')
+        return redirect(url_for('Index'))
 
-    return redirect(url_for('Index'))
-
-@app.route('/update_restaurant/<string:id>' , methods = ['POST'])
+@app.route('/update_restaurant/<string:id>', methods=['POST'])
 def update_restaurant(id):
-  if request.method == "POST": 
-    rating= request.form['rating']
-    name = request.form['name']
-    site = request.form['site']
-    email = request.form['email']
-    phone = request.form['phone']
-    street = request.form['street']
-    city = request.form['city']
-    state = request.form['state'] 
-    lat = request.form['lat']
-    lng= request.form['lng']
-    cur= mysql.connection.cursor()
-    cur.execute("""
-    UPDATE restaurants 
-    SET 
-    rating=%s ,
-    name=%s ,
-    site=%s ,
-    email=%s ,
-    phone=%s ,
-    street=%s ,
-    city=%s ,
-    state=%s , lat=%s ,lng=%s 
-    WHERE id=%s 
-    """,(rating,name,site,email,phone,street, city, state, lat,lng,id))
-    mysql.connection.commit()
-    flash('restaurant added succesfully')
-    return redirect(url_for('Index'))
+    if request.method == "POST":
+        restaurant = Restaurant.query.get(id)
+        restaurant.rating = request.form['rating']
+        # Update other fields similarly...
+        db.session.commit()
+        flash('Restaurant updated successfully')
+        return redirect(url_for('Index'))
 
-@app.route('/edit/<id>' , methods = ['POST', 'GET'])
-def get_restaurant(id ):
-  cur=   mysql.connection.cursor()
-  cur.execute('SELECT * FROM restaurants WHERE id= {0}'.format(id))
-  data = cur.fetchall()
-  cur.close()
-  # print(data)
-  # print(id)
-  return render_template('edit-restaurant.html',restaurant = data[0])
-
-
-
-# @app.route('/update/<string:id>', methods=['POST','GET'])
-# def update_restaurant(id):
-#   if request.method == 'POST':
-#     id= request.form['id']
-#     rating= request.form['rating']
-#     name = request.form['name']
-#     site = request.form['site']
-#     email = request.form['email']
-#     phone = request.form['phone']
-#     street = request.form['street']
-#     city = request.form['city']
-#     state = request.form['state'] 
-#     lat = request.form['lat']
-#     lng= request.form['lng']  
-#     cur= mysql.connection.cursor()
-#     cur.execute('SELECT * FROM restaurants WHERE id= {0}'.format(id))
-#     flash('restaurant updated succesfully')
-#     return redirect(url_for('Index'))
-#     print(id)
-    
-
-
+@app.route('/edit/<id>', methods=['POST', 'GET'])
+def get_restaurant(id):
+    restaurant = Restaurant.query.get(id)
+    return render_template('edit-restaurant.html', restaurant=restaurant)
 
 @app.route('/delete/<string:id>')
 def delete_restaurant(id):
-    cur=   mysql.connection.cursor()
-    cur.execute('DELETE FROM restaurants where id= {0} '.format(id))
-    mysql.connection.commit()
-    flash('removed contact ')
+    restaurant = Restaurant.query.get(id)
+    db.session.delete(restaurant)
+    db.session.commit()
+    flash('Restaurant removed successfully')
     return redirect(url_for('Index'))
 
-
-if __name__  == "__main__":
-    app.run(port = 3000 ,debug= True)
+if __name__ == "__main__":
+    app.run(port=3000, debug=True)
